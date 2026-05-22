@@ -22,24 +22,24 @@ onMounted(() => {
 })
 
 // 封装请求方法，增加加载状态
-const getlist = async () => {
+const getlist = () => {
   // 开启加载动画
   loading.value = true
-  try {
-    const list = JSON.parse(localStorage.getItem('orderlist')) || {}
-    orderlist.value = list?.items || []
-    total.value = list?.counts || 0
-
-    const a = await getorderlist(params.value)
-    orderlist.value = a.data.result.items
-    localStorage.setItem('orderlist', JSON.stringify(a.data.result))
-    total.value = a.data.result.counts
-  } catch (e) {
-    console.log(e);
-  } finally {
-    // 无论成功失败，关闭加载动画
-    loading.value = false
-  }
+  getorderlist(params.value)
+    .then(a => {
+      // 请求成功：赋值数据 + 缓存
+      console.log(a);
+      orderlist.value = a.data.result.items
+      total.value = a.data.result.counts
+    })
+    .catch(e => {
+      // 请求失败：打印错误
+      console.log(e);
+    })
+    .finally(() => {
+      // 无论成功/失败，关闭加载动画
+      loading.value = false
+    })
 }
 
 watch(
@@ -74,19 +74,21 @@ const change2 = (p) => {
     <!-- 订单列表 -->
     <div class="order-list">
       <div class="order-card" v-for="it in orderlist" :key="it.id">
-        <!-- 订单头部信息 -->
-        <div class="order-header">
-          <span>下单时间：{{ it.createTime }}</span>
-          <span>订单编号：{{ it.id }}</span>
+        <!-- 订单头部（只写一次！） -->
+        <div style="background-color: #eee; padding:10px; margin-bottom:10px;">
+          <span style="margin-right: 20px;">下单时间：{{ it.createTime }}</span>
+          <span style="margin-right: 20px;">订单编号：{{ it.id }}</span>
           <span class="detail-btn">查看详情</span>
         </div>
-        <!-- 订单商品列表 -->
-        <div class="order-goods" v-for="it1 in it.skus" :key="it1.id">
-          <img :src="it1.image" alt="商品图片" class="goods-img" />
-          <div class="goods-info">{{ it1.name }}</div>
-          <div class="goods-price">￥{{ it1.realPay }}</div>
-          <div class="goods-num">x{{ it1.quantity }}</div>
-          <div class="goods-total">小计：￥{{ it1.realPay * it1.quantity }}</div>
+
+        <!-- 订单商品列表（统一外层容器 + flex布局） -->
+        <div v-for="it1 in it.skus" :key="it1.id"
+          style="display: flex;align-items: center;margin-bottom: 20px;padding:0 10px;">
+          <img :src="it1.image" alt="" style="width: 60px;height: 60px;margin-right: 10px;">
+          <span style="margin-right: 10px;">{{ it1.name }}</span>
+          <span style="margin-right: 10px;">￥{{ it1.realPay }}</span>
+          <span style="margin-right: 10px;">数量{{ it1.quantity }}</span>
+          <span>总:￥{{ it1.realPay * it1.quantity }}</span>
         </div>
       </div>
     </div>
@@ -158,8 +160,9 @@ const change2 = (p) => {
   background: #fff;
   border-radius: 8px;
   border: 1px solid #f2f3f5;
-  overflow: hidden;
+  /* overflow: hidden; */
   transition: box-shadow 0.3s ease;
+  max-height: 600px;
 }
 
 .order-card:hover {
